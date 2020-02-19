@@ -6,7 +6,7 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 
-
+//步骤1：读取点云信息 读取PCD文件中的点云信息
 pcl::PointCloud<pcl::PointXYZ>::Ptr read_cloud_point(std::string const &file_path){
     // Loading first scan.
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -17,9 +17,9 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr read_cloud_point(std::string const &file_pat
     }
     return cloud;
 }
-
+//步骤4：将配准以后的点云图可视化
 void visualizer(pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud){
-    // Initializing point cloud visualizer
+    // Initializing point cloud visualizer 初始化点云图可视化
     boost::shared_ptr<pcl::visualization::PCLVisualizer>
             viewer_final (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     viewer_final->setBackgroundColor (0, 0, 0);
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
     auto input_cloud = read_cloud_point(argv[2]);
     std::cout << "Loaded " << input_cloud->size () << " data points from cloud2.pcd" << std::endl;
-
+    //步骤2：过滤输入点云
     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::ApproximateVoxelGrid<pcl::PointXYZ> approximate_voxel_filter;
     approximate_voxel_filter.setLeafSize(0.2, 0.2, 0.2);
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     approximate_voxel_filter.filter(*filtered_cloud);
 
     std::cout<<"Filtered cloud contains "<< filtered_cloud->size() << "data points from cloud2.pcd" << std::endl;
-
+    //初始化NDT并且设置NDT参数
     pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
     ndt.setTransformationEpsilon(0.01);
     ndt.setStepSize(0.1);
@@ -74,11 +74,11 @@ int main(int argc, char **argv) {
     ndt.setMaximumIterations(35);
     ndt.setInputSource(filtered_cloud);
     ndt.setInputTarget(target_cloud);
-
+    //步骤3：初始化变换参数并开始初始化
     Eigen::AngleAxisf init_rotation(0.6931, Eigen::Vector3f::UnitZ());
     Eigen::Translation3f init_translation (1.79387, 0.720047, 0);
     Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix();
-
+    //保存配准以后的点云图，输出到文件cloud3.pcd
     pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 
     ndt.align(*output_cloud, init_guess);
